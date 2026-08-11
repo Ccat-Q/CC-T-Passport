@@ -1,0 +1,7 @@
+# 所有 Lua 源文件与脚本强制 LF 行尾,
+# 避免 CRLF 混入在游戏内部署的代码/字符串中
+*.lua text eol=lf
+*.md text eol=lf
+*.ps1 text eol=crlf
+*.gitignore text eol=lf
+*.gitattributes text eol=lf
