@@ -1,6 +1,9 @@
 # Codegraph 索引
 .codegraph/
 
+# OhMyOpenCode 工作区产物
+.omo/
+
 # 临时文件
 *.tmp
 *.log
