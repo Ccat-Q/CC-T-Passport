@@ -131,14 +131,15 @@ local function banner()
 end
 
 -- 启动前检查
-if not peripheral.find("modem") then
+local modem = peripheral.find("modem")
+if not modem then
   term.setTextColor(colors.red)
   print("错误: 未连接调制解调器!")
   print("请在电脑背面(或其他面)放置有线调制解调器。")
   term.setTextColor(colors.white)
   return
 end
-local ok, err = pcall(rednet.open, peripheral.find("modem"))
+local ok, err = pcall(rednet.open, peripheral.getName(modem))
 if not ok then
   term.setTextColor(colors.red)
   print("错误: 打开调制解调器失败: " .. tostring(err))
