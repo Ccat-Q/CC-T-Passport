@@ -218,7 +218,7 @@ function tui.menu(title, options, width)
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(mx + 1, my + mh - 1)
-    term.write(tui.pad("↑↓ select  Enter confirm  Esc back", mw - 2))
+    term.write(tui.pad("^v select  Enter confirm  Esc back", mw - 2))
   end
 
   draw()
@@ -313,12 +313,12 @@ function tui.form(title, fields)
       term.setTextColor(C.textFg)
     end
     term.setCursorPos(fx + 1, sy)
-    term.write(tui.pad("  ✓ Submit", fw - 2))
+    term.write(tui.pad("  [OK] Submit", fw - 2))
     -- 提示行
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(fx + 1, fy + fh - 1)
-    term.write(tui.pad(hint ~= "" and hint or "↑↓ switch  Enter edit/submit  Esc cancel", fw - 2))
+    term.write(tui.pad(hint ~= "" and hint or "^v switch  Enter edit/submit  Esc cancel", fw - 2))
   end
 
   local function isChoice(i)

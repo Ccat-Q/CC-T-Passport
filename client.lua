@@ -80,7 +80,7 @@ local function monitorShow(p)
   mon.setBackgroundColor(bg)
   mon.setTextColor(colors.white)
   mon.setCursorPos(1, 1)
-  mon.write(tui.pad("★ P A S S P O R T ★", w, "center"))
+  mon.write(tui.pad("* P A S S P O R T *", w, "center"))
 
   -- 正文
   mon.setBackgroundColor(colors.black)
@@ -245,7 +245,7 @@ local function showPassport(p)
     term.setBackgroundColor(colors.black)
     term.setTextColor(colors.gray)
     term.setCursorPos(1, h - 1)
-    term.write(tui.truncate("←→ page  P print  M monitor  Esc back", w))
+    term.write(tui.truncate("< > page  P print  M monitor  Esc back", w))
   end
 
   draw()
@@ -346,14 +346,14 @@ local function actIssue()
       tui.msgBox("Warning", {
         "Not registered (server offline?)",
         "Reason: " .. tostring(e),
-        "Passport saved to disk; you can \"Upload: Disk → Server\" later",
+        "Passport saved to disk; you can \"Upload: Disk to Server\" later",
       })
     end
   else
     tui.msgBox("Issued (Local Only)", {
       "Server offline; passport saved to disk only",
       "ID: " .. p.id,
-      "Choose \"Upload: Disk → Server\" from the menu later",
+      "Choose \"Upload: Disk to Server\" from the menu later",
     })
   end
   monitorShow(p)
@@ -414,7 +414,7 @@ local function actEdit()
       tui.msgBox("Edit Complete", { "Saved to disk and synced to server" })
     else
       local e = (resp and resp.data and resp.data.error) or "Server not responding"
-      tui.msgBox("Saved to Disk", { "Server sync failed: " .. tostring(e), "Use \"Upload: Disk → Server\" to retry later" })
+      tui.msgBox("Saved to Disk", { "Server sync failed: " .. tostring(e), "Use \"Upload: Disk to Server\" to retry later" })
     end
   else
     tui.msgBox("Saved to Disk", { "Server offline, not synced" })
@@ -631,8 +631,8 @@ while true do
     { label = "View Passport" },
     { label = "Edit Passport" },
     { label = "Stamp Visa" },
-    { label = "Sync: Server → Disk" },
-    { label = "Upload: Disk → Server" },
+    { label = "Sync: Server to Disk" },
+    { label = "Upload: Disk to Server" },
     { label = "Server Status" },
     { label = "Settings" },
     { label = "Exit" },
