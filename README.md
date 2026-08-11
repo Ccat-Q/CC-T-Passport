@@ -3,6 +3,17 @@
 基于 [CC: Tweaked](https://tweaked.cc/) 的 Minecraft 护照/出入境管理系统。
 适用于 **Minecraft 1.21.1 + CC: Tweaked 1.113+**。
 
+## 快速开始（3 步）
+
+```
+① 准备外设：服务器电脑装 1 个 modem；每台客户端电脑装 modem + 磁盘驱动器
+② 下载安装：wget https://raw.githubusercontent.com/Ccat-Q/CC-T-Passport/main/install.lua
+③ 运行安装：install server   ← 服务器电脑
+             install client   ← 每台客户端电脑
+```
+
+装好后服务器电脑运行 `server`，客户端电脑运行 `client`，状态栏出现 `服务器 #123` 即连接成功。
+
 ## 架构
 
 ```
@@ -58,14 +69,31 @@
 
 ### 2. 上传代码
 
-方式一（推荐）：把本仓库的 `install.lua` 上传到每台电脑（`pastebin get <code> install`），然后运行：
+方式一（推荐）：在每台电脑上直接下载安装器：
+
+```lua
+wget https://raw.githubusercontent.com/Ccat-Q/CC-T-Passport/main/install.lua
+```
+
+然后运行：
 
 ```
 install server    ← 在服务器电脑上
 install client    ← 在每台客户端电脑上
 ```
 
-方式二：按文件结构手动 `edit` / `wget` 逐个创建文件。
+> 前提：CC: Tweaked 的 HTTP API 需开启（单机默认开启；联机服需在 `computercraft-server.toml` 允许 http，默认白名单为空即放行所有域名）。
+
+安装器会自动创建 `lib/` 目录并写入对应文件，**无需手动建目录或放文件**：
+
+- `install server` → 写入 `lib/config.lua`、`lib/passport.lua`、`lib/db.lua`、`server.lua`
+- `install client` → 写入 `lib/config.lua`、`lib/passport.lua`、`lib/net.lua`、`lib/tui.lua`、`client.lua`
+
+> 外设朝向如需调整，改 `lib/config.lua` 顶部的 `MODEM_SIDE` / `DISK_SIDE` / `MONITOR_SIDE` / `PRINTER_SIDE`（默认 `back` / `right` / `top` / `bottom`，与上面的外设摆放一致，通常不用改）。
+
+方式二：如果上述直链不可用，可用 `pastebin get <code> install` 下载。
+
+方式三：按文件结构手动 `edit` / `wget` 逐个创建文件。
 
 ### 3. 启动
 
