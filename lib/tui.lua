@@ -57,6 +57,7 @@ local function charWidth(cp)
 end
 
 -- 返回字符串第 i 字节处的下一个 UTF-8 字符的码点与结束位置
+-- (对不完整的 UTF-8 序列做防护, 避免 nil 算术错误)
 local function utf8Next(s, i)
   if i > #s then return nil end
   local b = s:byte(i)
@@ -64,12 +65,12 @@ local function utf8Next(s, i)
   if b < 0x80 then
     n, cp = 1, b
   elseif b < 0xE0 then
-    n, cp = 2, (b % 0x20) * 0x40 + s:byte(i + 1) % 0x40
+    n, cp = 2, (b % 0x20) * 0x40 + (s:byte(i + 1) or 0) % 0x40
   elseif b < 0xF0 then
-    n, cp = 3, (b % 0x10) * 0x1000 + (s:byte(i + 1) % 0x40) * 0x40 + s:byte(i + 2) % 0x40
+    n, cp = 3, (b % 0x10) * 0x1000 + ((s:byte(i + 1) or 0) % 0x40) * 0x40 + (s:byte(i + 2) or 0) % 0x40
   else
-    n, cp = 4, (b % 0x08) * 0x40000 + (s:byte(i + 1) % 0x40) * 0x1000
-      + (s:byte(i + 2) % 0x40) * 0x40 + s:byte(i + 3) % 0x40
+    n, cp = 4, (b % 0x08) * 0x40000 + ((s:byte(i + 1) or 0) % 0x40) * 0x1000
+      + ((s:byte(i + 2) or 0) % 0x40) * 0x40 + (s:byte(i + 3) or 0) % 0x40
   end
   return cp, i + n
 end
@@ -165,7 +166,7 @@ function tui.frame(title, statusText)
   term.setBackgroundColor(C.titleBg)
   term.setTextColor(C.titleFg)
   term.setCursorPos(1, 1)
-  term.write(" " .. tui.truncate(title, w - 2) .. string.rep(" ", w - 1))
+  term.write(tui.pad(" " .. tui.truncate(title, w - 2), w))
   -- 状态栏
   tui.statusBar(statusText)
   term.setBackgroundColor(C.bg)
@@ -178,7 +179,7 @@ function tui.statusBar(text)
   term.setBackgroundColor(colors.gray)
   term.setTextColor(colors.black)
   term.setCursorPos(1, h)
-  term.write(" " .. tui.truncate(tostring(text or ""), w - 2) .. string.rep(" ", w - 1))
+  term.write(tui.pad(" " .. tui.truncate(tostring(text or ""), w - 2), w))
   term.setBackgroundColor(C.bg)
 end
 
@@ -211,15 +212,7 @@ function tui.menu(title, options, width)
         term.setTextColor(C.textFg)
       end
       term.setCursorPos(mx + 1, y)
-      local label = "  " .. tostring(i) .. ") " .. opt.label
-      local desc = opt.desc and ("  " .. opt.desc) or ""
-      term.write(tui.pad(label, mw - 3))
-      if opt.desc then
-        term.setBackgroundColor(C.bg)
-        term.setTextColor(C.dimFg)
-        term.setCursorPos(mx + 1, y)
-        term.write(tui.truncate(label, 14))
-      end
+      term.write(tui.pad("  " .. tostring(i) .. ") " .. opt.label, mw - 3))
     end
     -- 底部提示
     term.setBackgroundColor(C.bg)
@@ -281,7 +274,7 @@ function tui.form(title, fields)
   local function fieldValue(f)
     local v = values[f.key]
     if f.type == "password" and v ~= "" then
-      return string.rep("*", #v)
+      return string.rep("*", tui.displayWidth(v))
     elseif f.type == "choice" then
       local n = tonumber(v) or 1
       return (f.choices and f.choices[n]) or tostring(v)
@@ -305,16 +298,13 @@ function tui.form(title, fields)
       term.write(tui.pad(f.label .. ":", 12))
       local v = fieldValue(f)
       if i ~= cur then
-        term.write(tui.pad(tui.truncate(v, fw - 15), fw - 14))
+        term.write(tui.pad(tui.truncate(v, fw - 15), fw - 15))
       else
         term.write(tui.pad("", fw - 15))
       end
     end
     -- 提交行
     local sy = fy + 2 + #fields
-    if sy == fy + 2 + (cur - 1) then
-      -- cur 与提交行重叠时不会发生, 因为 cur 最大为 #fields
-    end
     if #fields + 1 == cur then
       term.setBackgroundColor(C.selBg)
       term.setTextColor(C.selFg)
