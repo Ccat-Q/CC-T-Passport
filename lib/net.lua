@@ -12,13 +12,13 @@ local reqCounter = 0
 function net.open()
   local modem = peripheral.find("modem")
   if not modem then
-    return false, "未找到调制解调器(需安装有线/无线调制解调器)"
+    return false, "No modem found (install a wired/wireless modem)"
   end
   local side = peripheral.getName(modem)
   if not rednet.isOpen(side) then
     local ok, err = pcall(rednet.open, side)
     if not ok then
-      return false, "打开调制解调器失败: " .. tostring(err)
+      return false, "Failed to open modem: " .. tostring(err)
     end
   end
   return true

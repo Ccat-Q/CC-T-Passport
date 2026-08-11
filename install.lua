@@ -17,7 +17,7 @@ local files = {
 ]]
 
 local config = {
-  NAME    = "护照管理系统",
+  NAME    = "Passport System",
   VERSION = "1.0.0",
 
   -- 红石网络协议名(整个系统必须一致)
@@ -95,10 +95,10 @@ function passport.new(data)
   local now = os.time()
   local p = {
     id         = (data.id and data.id ~= "") and data.id or passport.provisionalID(),
-    name       = data.name or "未知",
+    name       = data.name or "Unknown",
     age        = tonumber(data.age) or 0,
-    gender     = data.gender or "未知",
-    nation     = data.nation or "未知",
+    gender     = data.gender or "Unknown",
+    nation     = data.nation or "Unknown",
     photo      = data.photo or "",
     note       = data.note or "",
     validYears = validYears,
@@ -114,15 +114,15 @@ end
 -- 校验护照有效性。返回 ok, 原因
 function passport.validate(p)
   if type(p) ~= "table" or not p.id or p.id == "" then
-    return false, "护照数据无效"
+    return false, "Invalid passport data"
   end
   if p.status == "revoked" then
-    return false, "护照已被吊销"
+    return false, "Passport has been revoked"
   end
   if p.expires and os.time() > p.expires then
-    return false, "护照已过期(" .. tostring(p.expiry) .. ")"
+    return false, "Passport expired (" .. tostring(p.expiry) .. ")"
   end
-  return true, "护照有效(有效期至 " .. tostring(p.expiry or "?") .. ")"
+  return true, "Valid until " .. tostring(p.expiry or "?") .. ")"
 end
 
 -- 添加签证/出入境记录。stamp: { type="入境"|"出境"|"签证", country=..., note=... }
@@ -138,7 +138,7 @@ end
 -- 护照状态的中文描述
 function passport.statusText(p)
   local ok, reason = passport.validate(p)
-  return ok and "有效" or "无效"
+  return ok and "VALID" or "INVALID"
 end
 
 ------------------------------------------------------------------------------
@@ -149,25 +149,25 @@ end
 function passport.readDisk(side)
   side = side or config.DISK_SIDE
   if not disk.isPresent(side) then
-    return nil, "磁盘驱动器中没有软盘"
+    return nil, "No disk in drive"
   end
   if not disk.hasData(side) then
-    return nil, "软盘无文件系统(请先在游戏中插入空白软盘格式化)"
+    return nil, "Disk has no filesystem (format a blank floppy first)"
   end
   local mount = disk.getMountPath(side) or "disk"
   local path = "/" .. mount .. "/" .. config.DISK_FILE
   if not fs.exists(path) then
-    return nil, "软盘上没有护照文件(" .. config.DISK_FILE .. ")"
+    return nil, "No passport file on disk (" .. config.DISK_FILE .. ")"
   end
   local f = fs.open(path, "r")
   if not f then
-    return nil, "无法打开护照文件"
+    return nil, "Cannot open passport file"
   end
   local raw = f.readAll()
   f.close()
   local ok, data = pcall(textutils.unserialize, raw)
   if not ok or type(data) ~= "table" then
-    return nil, "护照文件已损坏或格式不对"
+    return nil, "Passport file is corrupted or invalid"
   end
   return data
 end
@@ -177,10 +177,10 @@ end
 function passport.writeDisk(side, p)
   side = side or config.DISK_SIDE
   if not disk.isPresent(side) then
-    return nil, "磁盘驱动器中没有软盘"
+    return nil, "No disk in drive"
   end
   if not disk.hasData(side) then
-    return nil, "软盘无文件系统(请先在游戏中插入空白软盘格式化)"
+    return nil, "Disk has no filesystem (format a blank floppy first)"
   end
   local mount = disk.getMountPath(side) or "disk"
   local dir = "/" .. mount
@@ -189,7 +189,7 @@ function passport.writeDisk(side, p)
 
   local f = fs.open(tmp, "w")
   if not f then
-    return nil, "无法写入软盘(磁盘已满或只读?)"
+    return nil, "Cannot write to disk (full or read-only?)"
   end
   f.write(textutils.serialize(p))
   f.close()
@@ -218,13 +218,13 @@ local reqCounter = 0
 function net.open()
   local modem = peripheral.find("modem")
   if not modem then
-    return false, "未找到调制解调器(需安装有线/无线调制解调器)"
+    return false, "No modem found (install a wired/wireless modem)"
   end
   local side = peripheral.getName(modem)
   if not rednet.isOpen(side) then
     local ok, err = pcall(rednet.open, side)
     if not ok then
-      return false, "打开调制解调器失败: " .. tostring(err)
+      return false, "Failed to open modem: " .. tostring(err)
     end
   end
   return true
@@ -505,7 +505,7 @@ function tui.menu(title, options, width)
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(mx + 1, my + mh - 1)
-    term.write(tui.pad("↑↓选择  Enter确认  Esc返回", mw - 2))
+    term.write(tui.pad("↑↓ select  Enter confirm  Esc back", mw - 2))
   end
 
   draw()
@@ -600,12 +600,12 @@ function tui.form(title, fields)
       term.setTextColor(C.textFg)
     end
     term.setCursorPos(fx + 1, sy)
-    term.write(tui.pad("  ✓ 确认提交", fw - 2))
+    term.write(tui.pad("  ✓ Submit", fw - 2))
     -- 提示行
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(fx + 1, fy + fh - 1)
-    term.write(tui.pad(hint ~= "" and hint or "↑↓切换  Enter编辑/提交  Esc取消", fw - 2))
+    term.write(tui.pad(hint ~= "" and hint or "↑↓ switch  Enter edit/submit  Esc cancel", fw - 2))
   end
 
   local function isChoice(i)
@@ -642,7 +642,7 @@ function tui.form(title, fields)
     term.setCursorBlink(false)
     if v then
       if f.type == "number" and v ~= "" and not tonumber(v) then
-        hint = "错误: 请输入数字"
+        hint = "Error: enter a number"
         draw()
         return
       end
@@ -677,7 +677,7 @@ function tui.form(title, fields)
             end
           end
           if #missing > 0 then
-            hint = "请填写: " .. table.concat(missing, "、")
+            hint = "Required: " .. table.concat(missing, ", ")
             draw()
           else
             return values
@@ -710,7 +710,7 @@ end
 -- lines: string 或 string 数组
 function tui.msgBox(title, lines, okLabel)
   if type(lines) == "string" then lines = { lines } end
-  okLabel = okLabel or "按任意键关闭"
+  okLabel = okLabel or "Press any key to close"
   local w, h = term.getSize()
   local mw = 48
   local mh = #lines + 4
@@ -738,8 +738,8 @@ end
 -- 确认框: 返回 boolean
 function tui.confirm(title, lines, yesLabel, noLabel)
   if type(lines) == "string" then lines = { lines } end
-  yesLabel = yesLabel or "Y 是"
-  noLabel = noLabel or "N 否"
+  yesLabel = yesLabel or "Y Yes"
+  noLabel = noLabel or "N No"
   local w, h = term.getSize()
   local mw = 48
   local mh = #lines + 4
@@ -808,7 +808,7 @@ function db.save(data)
   if not ok then return false, err end
   local tmp = config.SERVER_DB .. ".tmp"
   local f = fs.open(tmp, "w")
-  if not f then return false, "无法写入数据库" end
+  if not f then return false, "Cannot write database" end
   f.write(textutils.serialize(data))
   f.close()
   if fs.exists(config.SERVER_DB) then
@@ -852,7 +852,7 @@ end
 function db.addStamp(data, id, stamp)
   local rec = data.passports[id]
   if not rec then
-    return nil, "护照不存在: " .. tostring(id)
+    return nil, "Passport not found: " .. tostring(id)
   end
   local pmod = require("lib.passport")
   pmod.addStamp(rec, stamp)
@@ -863,7 +863,7 @@ end
 function db.revoke(data, id)
   local rec = data.passports[id]
   if not rec then
-    return nil, "护照不存在: " .. tostring(id)
+    return nil, "Passport not found: " .. tostring(id)
   end
   rec.status = "revoked"
   return rec
@@ -931,55 +931,55 @@ local function handle(client, msg)
     })
   elseif t == "register" then
     if type(msg.data) ~= "table" then
-      reply(client, msg.reqId, false, { error = "数据格式错误" })
+      reply(client, msg.reqId, false, { error = "Bad data format" })
       return
     end
     local rec, isNew = db.register(data, msg.data)
     local ok, err = db.save(data)
     if not ok then
-      reply(client, msg.reqId, false, { error = "服务器数据库写入失败: " .. tostring(err) })
+      reply(client, msg.reqId, false, { error = "Server DB write failed: " .. tostring(err) })
       return
     end
-    log(("登记护照 %s (%s) 姓名=%s"):format(rec.id, isNew and "新签" or "更新", rec.name))
+    log(("Registered %s (%s) name=%s"):format(rec.id, isNew and "new" or "update", rec.name))
     reply(client, msg.reqId, true, { record = rec, isNew = isNew })
   elseif t == "get" then
     local rec = db.get(data, msg.id)
     if rec then
       reply(client, msg.reqId, true, { record = rec })
     else
-      reply(client, msg.reqId, false, { error = "未找到护照 " .. tostring(msg.id) })
+      reply(client, msg.reqId, false, { error = "Passport not found: " .. tostring(msg.id) })
     end
   elseif t == "stamp" then
     if type(msg.stamp) ~= "table" then
-      reply(client, msg.reqId, false, { error = "盖章数据格式错误" })
+      reply(client, msg.reqId, false, { error = "Bad stamp data" })
       return
     end
     local rec, err = db.addStamp(data, msg.id, msg.stamp)
     if rec then
       db.save(data)
-      log(("盖章 %s : %s / %s"):format(msg.id, msg.stamp.type or "?", msg.stamp.country or "?"))
+      log(("Stamped %s: %s / %s"):format(msg.id, msg.stamp.type or "?", msg.stamp.country or "?"))
       reply(client, msg.reqId, true, { record = rec })
     else
-      reply(client, msg.reqId, false, { error = err or "盖章失败" })
+      reply(client, msg.reqId, false, { error = err or "Stamp failed" })
     end
   elseif t == "update" then
     local rec = msg.data
     if type(rec) ~= "table" or not rec.id then
-      reply(client, msg.reqId, false, { error = "数据格式错误" })
+      reply(client, msg.reqId, false, { error = "Bad data format" })
       return
     end
     if not db.get(data, rec.id) then
-      reply(client, msg.reqId, false, { error = "护照不存在, 请先登记" })
+      reply(client, msg.reqId, false, { error = "Passport not found, register it first" })
       return
     end
     data.passports[rec.id] = rec
     db.save(data)
-    log(("更新护照 %s"):format(rec.id))
+    log(("Updated passport %s"):format(rec.id))
     reply(client, msg.reqId, true, { record = rec })
   elseif t == "check" then
     local rec = db.get(data, msg.id)
     if not rec then
-      reply(client, msg.reqId, false, { error = "未找到护照 " .. tostring(msg.id) })
+      reply(client, msg.reqId, false, { error = "Passport not found: " .. tostring(msg.id) })
       return
     end
     local ok, reason = passport.validate(rec)
@@ -988,20 +988,20 @@ local function handle(client, msg)
     local rec, err = db.revoke(data, msg.id)
     if rec then
       db.save(data)
-      log(("吊销护照 %s"):format(msg.id))
+      log(("Revoked passport %s"):format(msg.id))
       reply(client, msg.reqId, true, { record = rec })
     else
-      reply(client, msg.reqId, false, { error = err or "吊销失败" })
+      reply(client, msg.reqId, false, { error = err or "Revoke failed" })
     end
   elseif t == "remove" then
     local ok = db.remove(data, msg.id)
     if ok then db.save(data) end
-    log(("删除护照 %s : %s"):format(msg.id, ok and "成功" or "未找到"))
+    log(("Deleted passport %s: %s"):format(msg.id, ok and "ok" or "not found"))
     reply(client, msg.reqId, ok, {})
   elseif t == "stats" then
     reply(client, msg.reqId, true, { stats = db.stats(data) })
   else
-    reply(client, msg.reqId, false, { error = "未知请求类型: " .. tostring(t) })
+    reply(client, msg.reqId, false, { error = "Unknown request type: " .. tostring(t) })
   end
 end
 
@@ -1011,18 +1011,18 @@ local function banner()
   term.setCursorPos(1, 1)
   term.setTextColor(colors.cyan)
   print("============================================")
-  print("    护照管理系统 · 中央服务器 v" .. config.VERSION)
+  print("    Passport System · Central Server v" .. config.VERSION)
   print("============================================")
   term.setTextColor(colors.white)
   print()
-  print("  本机电脑 ID : " .. os.getComputerID())
-  print("  数据库文件  : " .. config.SERVER_DB)
+  print("  Computer ID: " .. os.getComputerID())
+  print("  Database file: " .. config.SERVER_DB)
   local st = db.stats(data)
-  print("  已存护照    : " .. st.total .. " (有效 " .. st.active
-    .. " / 吊销 " .. st.revoked .. " / 过期 " .. st.expired .. ")")
-  print("  下一编号    : " .. st.nextID)
+  print("  Passports: " .. st.total .. " (valid " .. st.active
+    .. " / revoked " .. st.revoked .. " / expired " .. st.expired .. ")")
+  print("  Next ID: " .. st.nextID)
   print()
-  print("  运行中... Ctrl+T 停止, Ctrl+R 重启")
+  print("  Running... Ctrl+T stop, Ctrl+R restart")
   print("--------------------------------------------------")
 end
 
@@ -1030,15 +1030,15 @@ end
 local modem = peripheral.find("modem")
 if not modem then
   term.setTextColor(colors.red)
-  print("错误: 未连接调制解调器!")
-  print("请在电脑背面(或其他面)放置有线调制解调器。")
+  print("Error: no modem attached!")
+  print("Place a wired modem on the computer (back or any side).")
   term.setTextColor(colors.white)
   return
 end
 local ok, err = pcall(rednet.open, peripheral.getName(modem))
 if not ok then
   term.setTextColor(colors.red)
-  print("错误: 打开调制解调器失败: " .. tostring(err))
+  print("Error: failed to open modem: " .. tostring(err))
   term.setTextColor(colors.white)
   return
 end
@@ -1047,8 +1047,8 @@ end
 local hostOk, hostErr = pcall(rednet.host, config.DISCOVERY_PROTOCOL, config.DISCOVERY_NAME)
 if not hostOk then
   term.setTextColor(colors.yellow)
-  print("警告: 注册发现服务失败: " .. tostring(hostErr))
-  print("       (可能已有一个服务器在运行?)")
+  print("Warning: failed to register discovery service: " .. tostring(hostErr))
+  print("       (another server may already be running?)")
   term.setTextColor(colors.white)
 end
 
@@ -1062,8 +1062,8 @@ parallel.waitForAny(
       if type(msg) == "table" then
         local okc, errc = pcall(handle, client, msg)
         if not okc then
-          log(("处理请求出错: %s"):format(errc))
-          reply(client, msg.reqId, false, { error = "服务器内部错误" })
+          log(("Error handling request: %s"):format(errc))
+          reply(client, msg.reqId, false, { error = "Server internal error" })
         end
       end
     end
@@ -1077,7 +1077,7 @@ parallel.waitForAny(
       term.setBackgroundColor(colors.gray)
       term.setTextColor(colors.black)
       term.setCursorPos(1, h)
-      local line = ("  护照总数 %d  有效 %d  吊销 %d  过期 %d"):format(
+      local line = ("  Passports %d  valid %d  revoked %d  expired %d"):format(
         st.total, st.active, st.revoked, st.expired)
       term.write(line .. string.rep(" ", w - #line))
       term.setBackgroundColor(colors.black)
@@ -1129,11 +1129,11 @@ local function refreshServer()
 end
 
 local function statusText()
-  return string.format("软盘:%s 显示器:%s 打印机:%s | %s",
-    periph.disk and "有" or "无",
-    periph.monitor and "有" or "无",
-    periph.printer and "有" or "无",
-    serverId and ("服务器 #" .. serverId) or "服务器离线")
+  return string.format("Disk:%s Mon:%s Print:%s | %s",
+    periph.disk and "Y" or "N",
+    periph.monitor and "Y" or "N",
+    periph.printer and "Y" or "N",
+    serverId and ("Server #" .. serverId) or "Server offline")
 end
 
 -- 把表单里的 choice 值(索引字符串)转成实际选项
@@ -1167,22 +1167,22 @@ local function monitorShow(p)
   mon.setBackgroundColor(bg)
   mon.setTextColor(colors.white)
   mon.setCursorPos(1, 1)
-  mon.write(tui.pad("★ 护 照 · P A S S P O R T ★", w, "center"))
+  mon.write(tui.pad("★ P A S S P O R T ★", w, "center"))
 
   -- 正文
   mon.setBackgroundColor(colors.black)
   mon.setTextColor(colors.white)
   local lines = {
-    "编号   : " .. p.id,
-    "姓名   : " .. p.name,
-    "年龄   : " .. tostring(p.age or 0),
-    "性别   : " .. p.gender,
-    "国籍   : " .. p.nation,
-    "照片   : " .. (p.photo and p.photo ~= "" and p.photo or "无"),
-    "签发   : " .. p.issued,
-    "有效期 : " .. p.expiry,
-    "状态   : " .. (ok and "有效" or "无效"),
-    "盖章   : " .. #(p.stamps or {}) .. " 次",
+    "ID     : " .. p.id,
+    "Name   : " .. p.name,
+    "Age    : " .. tostring(p.age or 0),
+    "Gender : " .. p.gender,
+    "Nationality : " .. p.nation,
+    "Photo  : " .. (p.photo and p.photo ~= "" and p.photo or "None"),
+    "Issued : " .. p.issued,
+    "Expiry : " .. p.expiry,
+    "Status : " .. (ok and "VALID" or "INVALID"),
+    "Stamps : " .. #(p.stamps or {}),
   }
   local y = 3
   for _, line in ipairs(lines) do
@@ -1207,14 +1207,14 @@ end
 
 -- 打印一页文字。lines 为字符串数组, 每行一次 write(不依赖光标自动推进)。
 local function printerPage(title, lines)
-  if not periph.printer then return false, "未连接打印机" end
+  if not periph.printer then return false, "No printer" end
   local pr = peripheral.wrap(config.PRINTER_SIDE)
-  if not pr then return false, "打印机不可用" end
+  if not pr then return false, "Printer unavailable" end
   if pr.getInkLevel() < 1 or pr.getPaperLevel() < 1 then
-    return false, "打印机缺墨水或纸张"
+    return false, "Printer out of ink or paper"
   end
   if not pr.newPage() then
-    return false, "无法开始新页面"
+    return false, "Cannot start new page"
   end
   local pw, ph = pr.getPageSize()
   pr.setPageTitle(title)
@@ -1226,7 +1226,7 @@ local function printerPage(title, lines)
     y = y + 1
   end
   if not pr.endPage() then
-    return false, "打印结束失败"
+    return false, "Failed to end page"
   end
   return true
 end
@@ -1236,7 +1236,6 @@ local function passportPageLines(p)
   return {
     "==================================",
     "         P A S S P O R T",
-    "            护  照",
     "==================================",
     "ID       : " .. p.id,
     "NAME     : " .. p.name,
@@ -1254,7 +1253,7 @@ local function passportPageLines(p)
 end
 
 local function visaReceiptLines(p, stamp)
-  local stype = { ["入境"] = "IN", ["出境"] = "OUT", ["签证"] = "VISA" }
+  local stype = { ["Entry"] = "IN", ["Exit"] = "OUT", ["Visa"] = "VISA" }
   return {
     "==============================",
     "      VISA STAMP RECEIPT",
@@ -1266,7 +1265,6 @@ local function visaReceiptLines(p, stamp)
     "TIME    : " .. stamp.time,
     "==============================",
     "   +---------------------+",
-    "   |     签证专用章       |",
     "   |     STAMP SEAL      |",
     "   +---------------------+",
     "==============================",
@@ -1292,7 +1290,7 @@ local function showPassport(p)
   term.setBackgroundColor(colors.cyan)
   term.setTextColor(colors.white)
   term.setCursorPos(1, 1)
-  term.write(tui.pad(" " .. tui.truncate("护照详情  " .. p.id, w - 2), w))
+  term.write(tui.pad(" " .. tui.truncate("Passport Details  " .. p.id, w - 2), w))
 
     local y = 2
     local function line(text, color)
@@ -1305,19 +1303,19 @@ local function showPassport(p)
     end
 
     line("")
-    line(("姓名: %s    年龄: %d    性别: %s"):format(p.name, p.age or 0, p.gender))
-    line(("国籍: %s    照片: %s"):format(p.nation, (p.photo and p.photo ~= "") and p.photo or "无"))
-    line(("签发: %s    有效期至: %s"):format(p.issued, p.expiry))
+    line(("Name: %s    Age: %d    Gender: %s"):format(p.name, p.age or 0, p.gender))
+    line(("Nationality: %s    Photo: %s"):format(p.nation, (p.photo and p.photo ~= "") and p.photo or "None"))
+    line(("Issued: %s    Expires: %s"):format(p.issued, p.expiry))
     if p.note and p.note ~= "" then
-      line("备注: " .. p.note)
+      line("Note: " .. p.note)
     end
-    line("状态: " .. (ok and "有效" or "无效") .. "  ·  " .. (reason or ""))
+    line("Status: " .. (ok and "VALID" or "INVALID") .. "  ·  " .. (reason or ""))
 
     y = y + 2
     term.setBackgroundColor(colors.black)
     term.setTextColor(colors.gray)
     term.setCursorPos(1, y)
-    term.write(tui.truncate(("── 签证与出入境记录 (%d)  第 %d/%d 页 ──"):format(#stamps, page, pages), w))
+    term.write(tui.truncate(("-- Visa Records (%d)  Page %d/%d --"):format(#stamps, page, pages), w))
 
     y = y + 1
     local startIdx = (page - 1) * perPage + 1
@@ -1334,7 +1332,7 @@ local function showPassport(p)
     term.setBackgroundColor(colors.black)
     term.setTextColor(colors.gray)
     term.setCursorPos(1, h - 1)
-    term.write(tui.truncate("←→翻页  P打印  M显示器  Esc返回", w))
+    term.write(tui.truncate("←→ page  P print  M monitor  Esc back", w))
   end
 
   draw()
@@ -1357,15 +1355,15 @@ local function showPassport(p)
       if c == "p" then
         local okp, errp = printerPage("Passport " .. p.id, passportPageLines(p))
         if okp then
-          tui.msgBox("打印", { "护照页已打印!" })
+          tui.msgBox("Print", { "Passport page printed!" })
         else
-          tui.msgBox("打印失败", { errp or "未知错误" })
+          tui.msgBox("Print Failed", { errp or "Unknown error" })
         end
         draw()
       elseif c == "m" then
         local shown = monitorShow(p)
         if not shown then
-          tui.msgBox("显示器", { "未连接显示器(" .. config.MONITOR_SIDE .. ")" })
+          tui.msgBox("Monitor", { "No monitor (" .. config.MONITOR_SIDE .. ")" })
           draw()
         end
       end
@@ -1377,22 +1375,22 @@ end
 -- 各功能
 ------------------------------------------------------------------------------
 
-local GENDER_CHOICES = { "男", "女", "其他" }
-local STAMP_TYPES = { "入境", "出境", "签证" }
+local GENDER_CHOICES = { "Male", "Female", "Other" }
+local STAMP_TYPES = { "Entry", "Exit", "Visa" }
 
 local function actIssue()
   if not periph.disk then
-    tui.msgBox("签发护照", { "未连接磁盘驱动器(" .. config.DISK_SIDE .. ")", "请放置磁盘驱动器并插入软盘" })
+    tui.msgBox("Issue Passport", { "No disk drive (" .. config.DISK_SIDE .. ")", "Place a disk drive with a floppy inserted" })
     return
   end
-  local values = tui.form("签发新护照", {
-    { key = "name",       label = "姓名",     type = "text",   required = true, default = "" },
-    { key = "age",        label = "年龄",     type = "number" },
-    { key = "gender",     label = "性别",     type = "choice", choices = GENDER_CHOICES, default = "1" },
-    { key = "nation",     label = "国籍",     type = "text",   default = "中国" },
-    { key = "photo",      label = "照片描述", type = "text" },
-    { key = "note",       label = "备注",     type = "text" },
-    { key = "validYears", label = "有效期年", type = "number", default = tostring(config.DEFAULT_VALID_YEARS) },
+  local values = tui.form("Issue New Passport", {
+    { key = "name",       label = "Name",       type = "text",   required = true, default = "" },
+    { key = "age",        label = "Age",        type = "number" },
+    { key = "gender",     label = "Gender",     type = "choice", choices = GENDER_CHOICES, default = "1" },
+    { key = "nation",     label = "Nationality", type = "text",  default = "China" },
+    { key = "photo",      label = "Photo Desc", type = "text" },
+    { key = "note",       label = "Note",       type = "text" },
+    { key = "validYears", label = "Valid Years", type = "number", default = tostring(config.DEFAULT_VALID_YEARS) },
   })
   if not values then return end
 
@@ -1408,7 +1406,7 @@ local function actIssue()
 
   local okw, errw = passport.writeDisk(config.DISK_SIDE, p)
   if not okw then
-    tui.msgBox("签发失败", { errw or "写入软盘失败" })
+    tui.msgBox("Issue Failed", { errw or "Disk write failed" })
     return
   end
 
@@ -1420,29 +1418,29 @@ local function actIssue()
         p = saved -- 服务器分配了官方编号, 回写软盘
         passport.writeDisk(config.DISK_SIDE, p)
       end
-      tui.msgBox("签发成功", {
-        "护照已写入软盘并登记到服务器",
-        "编号    : " .. p.id,
-        "姓名    : " .. p.name,
-        "有效期至: " .. p.expiry,
+      tui.msgBox("Issue Successful", {
+        "Passport written to disk and registered on server",
+        "ID      : " .. p.id,
+        "Name    : " .. p.name,
+        "Expires : " .. p.expiry,
       })
-      if periph.printer and tui.confirm("打印护照页?", { "是否打印护照页作为纪念品?" }) then
+      if periph.printer and tui.confirm("Print Passport Page?", { "Print a souvenir passport page?" }) then
         local okp, errp = printerPage("Passport " .. p.id, passportPageLines(p))
-        if not okp then tui.msgBox("打印失败", { errp or "未知错误" }) end
+        if not okp then tui.msgBox("Print Failed", { errp or "Unknown error" }) end
       end
     else
-      local e = (resp and resp.data and resp.data.error) or "服务器无响应"
-      tui.msgBox("警告", {
-        "服务器未登记(可能离线)",
-        "原因: " .. tostring(e),
-        "护照已保存在软盘, 稍后可「上传到服务器」",
+      local e = (resp and resp.data and resp.data.error) or "Server not responding"
+      tui.msgBox("Warning", {
+        "Not registered (server offline?)",
+        "Reason: " .. tostring(e),
+        "Passport saved to disk; you can \"Upload: Disk → Server\" later",
       })
     end
   else
-    tui.msgBox("签发成功(仅本地)", {
-      "服务器离线, 护照仅保存在软盘",
-      "编号: " .. p.id,
-      "之后可在菜单选择「上传到服务器」",
+    tui.msgBox("Issued (Local Only)", {
+      "Server offline; passport saved to disk only",
+      "ID: " .. p.id,
+      "Choose \"Upload: Disk → Server\" from the menu later",
     })
   end
   monitorShow(p)
@@ -1450,12 +1448,12 @@ end
 
 local function actView()
   if not periph.disk then
-    tui.msgBox("查看护照", { "未连接磁盘驱动器(" .. config.DISK_SIDE .. ")" })
+    tui.msgBox("View Passport", { "No disk drive (" .. config.DISK_SIDE .. ")" })
     return
   end
   local p, err = passport.readDisk(config.DISK_SIDE)
   if not p then
-    tui.msgBox("查看护照", { err or "读取失败" })
+    tui.msgBox("View Passport", { err or "Read failed" })
     return
   end
   showPassport(p)
@@ -1463,25 +1461,25 @@ end
 
 local function actEdit()
   if not periph.disk then
-    tui.msgBox("编辑护照", { "未连接磁盘驱动器(" .. config.DISK_SIDE .. ")" })
+    tui.msgBox("Edit Passport", { "No disk drive (" .. config.DISK_SIDE .. ")" })
     return
   end
   local p, err = passport.readDisk(config.DISK_SIDE)
   if not p then
-    tui.msgBox("编辑护照", { err or "读取失败" })
+    tui.msgBox("Edit Passport", { err or "Read failed" })
     return
   end
   local curGender = 1
   for i, g in ipairs(GENDER_CHOICES) do
     if g == p.gender then curGender = i end
   end
-  local values = tui.form("编辑护照 " .. p.id, {
-    { key = "name",   label = "姓名",     type = "text",   required = true, default = p.name },
-    { key = "age",    label = "年龄",     type = "number", default = tostring(p.age or "") },
-    { key = "gender", label = "性别",     type = "choice", choices = GENDER_CHOICES, default = tostring(curGender) },
-    { key = "nation", label = "国籍",     type = "text",   default = p.nation },
-    { key = "photo",  label = "照片描述", type = "text",   default = p.photo },
-    { key = "note",   label = "备注",     type = "text",   default = p.note },
+  local values = tui.form("Edit Passport " .. p.id, {
+    { key = "name",   label = "Name",        type = "text",   required = true, default = p.name },
+    { key = "age",    label = "Age",         type = "number", default = tostring(p.age or "") },
+    { key = "gender", label = "Gender",      type = "choice", choices = GENDER_CHOICES, default = tostring(curGender) },
+    { key = "nation", label = "Nationality", type = "text",   default = p.nation },
+    { key = "photo",  label = "Photo Desc",  type = "text",   default = p.photo },
+    { key = "note",   label = "Note",        type = "text",   default = p.note },
   })
   if not values then return end
 
@@ -1494,42 +1492,42 @@ local function actEdit()
 
   local okw, errw = passport.writeDisk(config.DISK_SIDE, p)
   if not okw then
-    tui.msgBox("编辑失败", { errw or "写入软盘失败" })
+    tui.msgBox("Edit Failed", { errw or "Disk write failed" })
     return
   end
   if serverId then
     local resp = net.request(serverId, { type = "update", data = p }, 6)
     if resp and resp.ok then
-      tui.msgBox("编辑完成", { "已保存到软盘并同步到服务器" })
+      tui.msgBox("Edit Complete", { "Saved to disk and synced to server" })
     else
-      local e = (resp and resp.data and resp.data.error) or "服务器无响应"
-      tui.msgBox("已保存到软盘", { "服务器同步失败: " .. tostring(e), "可用「上传到服务器」稍后重试" })
+      local e = (resp and resp.data and resp.data.error) or "Server not responding"
+      tui.msgBox("Saved to Disk", { "Server sync failed: " .. tostring(e), "Use \"Upload: Disk → Server\" to retry later" })
     end
   else
-    tui.msgBox("已保存到软盘", { "服务器离线, 未同步" })
+    tui.msgBox("Saved to Disk", { "Server offline, not synced" })
   end
   monitorShow(p)
 end
 
 local function actStamp()
   if not periph.disk then
-    tui.msgBox("签证盖章", { "未连接磁盘驱动器(" .. config.DISK_SIDE .. ")" })
+    tui.msgBox("Stamp Visa", { "No disk drive (" .. config.DISK_SIDE .. ")" })
     return
   end
   local p, err = passport.readDisk(config.DISK_SIDE)
   if not p then
-    tui.msgBox("签证盖章", { err or "读取失败" })
+    tui.msgBox("Stamp Visa", { err or "Read failed" })
     return
   end
   local ok, reason = passport.validate(p)
   if not ok then
-    tui.msgBox("无法盖章", { "该护照不可盖章: " .. reason })
+    tui.msgBox("Cannot Stamp", { "This passport cannot be stamped: " .. reason })
     return
   end
-  local values = tui.form("签证盖章 · " .. p.id, {
-    { key = "type",    label = "盖章类型", type = "choice", choices = STAMP_TYPES, default = "1" },
-    { key = "country", label = "国家/口岸", type = "text",   required = true },
-    { key = "note",    label = "备注",     type = "text" },
+  local values = tui.form("Stamp Visa · " .. p.id, {
+    { key = "type",    label = "Stamp Type",   type = "choice", choices = STAMP_TYPES, default = "1" },
+    { key = "country", label = "Country/Port", type = "text",   required = true },
+    { key = "note",    label = "Note",         type = "text" },
   })
   if not values then return end
 
@@ -1542,7 +1540,7 @@ local function actStamp()
 
   local okw, errw = passport.writeDisk(config.DISK_SIDE, p)
   if not okw then
-    tui.msgBox("盖章失败", { errw or "写入软盘失败" })
+    tui.msgBox("Stamp Failed", { errw or "Disk write failed" })
     return
   end
 
@@ -1552,35 +1550,35 @@ local function actStamp()
     if resp and resp.ok then
       synced = true
     else
-      local e = (resp and resp.data and resp.data.error) or "服务器无响应"
-      tui.msgBox("盖章完成(未同步)", {
-        "服务器同步失败: " .. tostring(e),
-        "盖章记录已保存在软盘",
+      local e = (resp and resp.data and resp.data.error) or "Server not responding"
+      tui.msgBox("Stamp Complete (Not Synced)", {
+        "Server sync failed: " .. tostring(e),
+        "Stamp saved to disk",
       })
     end
   end
   if synced then
-    tui.msgBox("盖章完成", {
-      ("已盖章: %s / %s"):format(stamp.type, stamp.country),
-      "时间: " .. stamp.time,
-      "已同步到服务器",
+    tui.msgBox("Stamp Complete", {
+      ("Stamped: %s / %s"):format(stamp.type, stamp.country),
+      "Time: " .. stamp.time,
+      "Synced to server",
     })
   end
-  if periph.printer and tui.confirm("打印回执?", { "是否打印签证盖章回执?" }) then
+  if periph.printer and tui.confirm("Print Receipt?", { "Print the visa stamp receipt?" }) then
     local okp, errp = printerPage("Visa " .. stamp.type .. " " .. p.id, visaReceiptLines(p, stamp))
-    if not okp then tui.msgBox("打印失败", { errp or "未知错误" }) end
+    if not okp then tui.msgBox("Print Failed", { errp or "Unknown error" }) end
   end
   monitorShow(p)
 end
 
 local function actSyncDown()
   if not periph.disk then
-    tui.msgBox("同步", { "未连接磁盘驱动器(" .. config.DISK_SIDE .. ")" })
+    tui.msgBox("Sync", { "No disk drive (" .. config.DISK_SIDE .. ")" })
     return
   end
   if not serverId then refreshServer() end
   if not serverId then
-    tui.msgBox("同步失败", { "未发现服务器, 无法同步" })
+    tui.msgBox("Sync Failed", { "No server found, cannot sync" })
     return
   end
   local id = disk.isPresent(config.DISK_SIDE) and disk.getLabel(config.DISK_SIDE) or nil
@@ -1590,8 +1588,8 @@ local function actSyncDown()
     if p then
       id = p.id
     else
-      local vals = tui.form("同步到软盘", {
-        { key = "id", label = "护照编号", type = "text", required = true },
+      local vals = tui.form("Sync to Disk", {
+        { key = "id", label = "Passport ID", type = "text", required = true },
       })
       if not vals then return end
       id = vals.id
@@ -1601,30 +1599,30 @@ local function actSyncDown()
   if resp and resp.ok then
     local okw, errw = passport.writeDisk(config.DISK_SIDE, resp.data.record)
     if okw then
-      tui.msgBox("同步完成", { ("已将服务器上 %s 的数据写入软盘"):format(id) })
+      tui.msgBox("Sync Complete", { ("Server data for %s written to disk"):format(id) })
       monitorShow(resp.data.record)
     else
-      tui.msgBox("同步失败", { errw or "写入软盘失败" })
+      tui.msgBox("Sync Failed", { errw or "Disk write failed" })
     end
   else
-    local e = (resp and resp.data and resp.data.error) or "服务器无响应"
-    tui.msgBox("同步失败", { tostring(e) })
+    local e = (resp and resp.data and resp.data.error) or "Server not responding"
+    tui.msgBox("Sync Failed", { tostring(e) })
   end
 end
 
 local function actSyncUp()
   if not periph.disk then
-    tui.msgBox("上传", { "未连接磁盘驱动器(" .. config.DISK_SIDE .. ")" })
+    tui.msgBox("Upload", { "No disk drive (" .. config.DISK_SIDE .. ")" })
     return
   end
   local p, err = passport.readDisk(config.DISK_SIDE)
   if not p then
-    tui.msgBox("上传失败", { err or "读取失败" })
+    tui.msgBox("Upload Failed", { err or "Read failed" })
     return
   end
   if not serverId then refreshServer() end
   if not serverId then
-    tui.msgBox("上传失败", { "未发现服务器" })
+    tui.msgBox("Upload Failed", { "No server found" })
     return
   end
   local resp = net.request(serverId, { type = "register", data = p }, 6)
@@ -1634,56 +1632,56 @@ local function actSyncUp()
       p = saved
       passport.writeDisk(config.DISK_SIDE, p) -- 服务器分配的编号回写软盘
     end
-    tui.msgBox("上传完成", {
-      ("已上传 %s (%s)"):format(p.id, resp.data.isNew and "新登记" or "更新"),
+    tui.msgBox("Upload Complete", {
+      ("Uploaded %s (%s)"):format(p.id, resp.data.isNew and "new" or "update"),
     })
   else
-    local e = (resp and resp.data and resp.data.error) or "服务器无响应"
-    tui.msgBox("上传失败", { tostring(e) })
+    local e = (resp and resp.data and resp.data.error) or "Server not responding"
+    tui.msgBox("Upload Failed", { tostring(e) })
   end
 end
 
 local function actStatus()
   if not serverId then refreshServer() end
   if not serverId then
-    tui.msgBox("服务器状态", {
-      "未发现护照服务器",
-      "请确认: 服务器电脑已启动、已连接调制解调器",
+    tui.msgBox("Server Status", {
+      "No passport server found",
+      "Check: server computer is running and has a modem",
     })
     return
   end
   local resp = net.request(serverId, { type = "stats" }, 5)
   if resp and resp.ok then
     local s = resp.data.stats
-    tui.msgBox("服务器状态", {
-      ("服务器电脑: #%d"):format(serverId),
-      ("系统版本 : %s"):format(config.VERSION),
-      ("护照总数 : %d"):format(s.total),
-      ("有效 %d   吊销 %d   过期 %d"):format(s.active, s.revoked, s.expired),
-      ("下一编号 : %s"):format(s.nextID),
+    tui.msgBox("Server Status", {
+      ("Server computer: #%d"):format(serverId),
+      ("Version: %s"):format(config.VERSION),
+      ("Total passports: %d"):format(s.total),
+      ("Valid %d  Revoked %d  Expired %d"):format(s.active, s.revoked, s.expired),
+      ("Next ID: %s"):format(s.nextID),
     })
   else
     -- 服务器可能重启换了 ID, 重新发现一次
     refreshServer()
     if serverId then
-      tui.msgBox("服务器状态", { ("已重新发现服务器 #%d"):format(serverId) })
+      tui.msgBox("Server Status", { ("Re-discovered server #%d"):format(serverId) })
     else
-      tui.msgBox("服务器状态", { "服务器无响应(可能离线)" })
+      tui.msgBox("Server Status", { "Server not responding (offline?)" })
     end
   end
 end
 
 local function actSettings()
-  local values = tui.form("设置服务器ID (0=自动发现)", {
-    { key = "server", label = "服务器ID", type = "number", default = tostring(config.SERVER_ID) },
+  local values = tui.form("Set Server ID (0=auto-detect)", {
+    { key = "server", label = "Server ID", type = "number", default = tostring(config.SERVER_ID) },
   })
   if not values then return end
   config.SERVER_ID = tonumber(values.server) or 0
   config.save()
   refreshServer()
-  tui.msgBox("设置完成", {
-    ("服务器ID: %d"):format(config.SERVER_ID),
-    config.SERVER_ID == 0 and "将在需要时自动发现服务器" or "使用手动指定的服务器",
+  tui.msgBox("Settings Saved", {
+    ("Server ID: %d"):format(config.SERVER_ID),
+    config.SERVER_ID == 0 and "Auto-detect server when needed" or "Use manually specified server",
   })
 end
 
@@ -1699,9 +1697,9 @@ end
 
 -- 启动提示(调制解调器缺失时)
 if not modemOk then
-  tui.msgBox("调制解调器", {
-    modemErr or "未找到调制解调器",
-    "网络功能不可用, 仅能使用软盘本地功能",
+  tui.msgBox("Modem", {
+    modemErr or "No modem found",
+    "Network unavailable; disk-local features only",
   })
 end
 
@@ -1714,17 +1712,17 @@ while true do
     refreshServer()
   end
 
-  tui.frame("护照管理系统 v" .. config.VERSION, statusText())
-  local sel = tui.menu("请选择操作", {
-    { label = "签发新护照" },
-    { label = "查看护照" },
-    { label = "编辑护照" },
-    { label = "签证盖章" },
-    { label = "同步: 服务器 → 软盘" },
-    { label = "上传: 软盘 → 服务器" },
-    { label = "服务器状态" },
-    { label = "设置" },
-    { label = "退出" },
+  tui.frame("Passport System v" .. config.VERSION, statusText())
+  local sel = tui.menu("Select action", {
+    { label = "Issue Passport" },
+    { label = "View Passport" },
+    { label = "Edit Passport" },
+    { label = "Stamp Visa" },
+    { label = "Sync: Server → Disk" },
+    { label = "Upload: Disk → Server" },
+    { label = "Server Status" },
+    { label = "Settings" },
+    { label = "Exit" },
   })
   if not sel then break end -- Esc 退出
   if sel == 1 then actIssue()
@@ -1742,7 +1740,7 @@ term.setBackgroundColor(colors.black)
 term.setTextColor(colors.white)
 term.clear()
 term.setCursorPos(1, 1)
-print("已退出护照系统。")
+print("Exited Passport System.")
 ]==],
 }
 local layouts = {

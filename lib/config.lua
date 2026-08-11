@@ -11,7 +11,7 @@
 ]]
 
 local config = {
-  NAME    = "护照管理系统",
+  NAME    = "Passport System",
   VERSION = "1.0.0",
 
   -- 红石网络协议名(整个系统必须一致)

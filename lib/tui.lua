@@ -218,7 +218,7 @@ function tui.menu(title, options, width)
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(mx + 1, my + mh - 1)
-    term.write(tui.pad("↑↓选择  Enter确认  Esc返回", mw - 2))
+    term.write(tui.pad("↑↓ select  Enter confirm  Esc back", mw - 2))
   end
 
   draw()
@@ -313,12 +313,12 @@ function tui.form(title, fields)
       term.setTextColor(C.textFg)
     end
     term.setCursorPos(fx + 1, sy)
-    term.write(tui.pad("  ✓ 确认提交", fw - 2))
+    term.write(tui.pad("  ✓ Submit", fw - 2))
     -- 提示行
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(fx + 1, fy + fh - 1)
-    term.write(tui.pad(hint ~= "" and hint or "↑↓切换  Enter编辑/提交  Esc取消", fw - 2))
+    term.write(tui.pad(hint ~= "" and hint or "↑↓ switch  Enter edit/submit  Esc cancel", fw - 2))
   end
 
   local function isChoice(i)
@@ -355,7 +355,7 @@ function tui.form(title, fields)
     term.setCursorBlink(false)
     if v then
       if f.type == "number" and v ~= "" and not tonumber(v) then
-        hint = "错误: 请输入数字"
+        hint = "Error: enter a number"
         draw()
         return
       end
@@ -390,7 +390,7 @@ function tui.form(title, fields)
             end
           end
           if #missing > 0 then
-            hint = "请填写: " .. table.concat(missing, "、")
+            hint = "Required: " .. table.concat(missing, ", ")
             draw()
           else
             return values
@@ -423,7 +423,7 @@ end
 -- lines: string 或 string 数组
 function tui.msgBox(title, lines, okLabel)
   if type(lines) == "string" then lines = { lines } end
-  okLabel = okLabel or "按任意键关闭"
+  okLabel = okLabel or "Press any key to close"
   local w, h = term.getSize()
   local mw = 48
   local mh = #lines + 4
@@ -451,8 +451,8 @@ end
 -- 确认框: 返回 boolean
 function tui.confirm(title, lines, yesLabel, noLabel)
   if type(lines) == "string" then lines = { lines } end
-  yesLabel = yesLabel or "Y 是"
-  noLabel = noLabel or "N 否"
+  yesLabel = yesLabel or "Y Yes"
+  noLabel = noLabel or "N No"
   local w, h = term.getSize()
   local mw = 48
   local mh = #lines + 4

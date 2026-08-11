@@ -35,55 +35,55 @@ local function handle(client, msg)
     })
   elseif t == "register" then
     if type(msg.data) ~= "table" then
-      reply(client, msg.reqId, false, { error = "数据格式错误" })
+      reply(client, msg.reqId, false, { error = "Bad data format" })
       return
     end
     local rec, isNew = db.register(data, msg.data)
     local ok, err = db.save(data)
     if not ok then
-      reply(client, msg.reqId, false, { error = "服务器数据库写入失败: " .. tostring(err) })
+      reply(client, msg.reqId, false, { error = "Server DB write failed: " .. tostring(err) })
       return
     end
-    log(("登记护照 %s (%s) 姓名=%s"):format(rec.id, isNew and "新签" or "更新", rec.name))
+    log(("Registered %s (%s) name=%s"):format(rec.id, isNew and "new" or "update", rec.name))
     reply(client, msg.reqId, true, { record = rec, isNew = isNew })
   elseif t == "get" then
     local rec = db.get(data, msg.id)
     if rec then
       reply(client, msg.reqId, true, { record = rec })
     else
-      reply(client, msg.reqId, false, { error = "未找到护照 " .. tostring(msg.id) })
+      reply(client, msg.reqId, false, { error = "Passport not found: " .. tostring(msg.id) })
     end
   elseif t == "stamp" then
     if type(msg.stamp) ~= "table" then
-      reply(client, msg.reqId, false, { error = "盖章数据格式错误" })
+      reply(client, msg.reqId, false, { error = "Bad stamp data" })
       return
     end
     local rec, err = db.addStamp(data, msg.id, msg.stamp)
     if rec then
       db.save(data)
-      log(("盖章 %s : %s / %s"):format(msg.id, msg.stamp.type or "?", msg.stamp.country or "?"))
+      log(("Stamped %s: %s / %s"):format(msg.id, msg.stamp.type or "?", msg.stamp.country or "?"))
       reply(client, msg.reqId, true, { record = rec })
     else
-      reply(client, msg.reqId, false, { error = err or "盖章失败" })
+      reply(client, msg.reqId, false, { error = err or "Stamp failed" })
     end
   elseif t == "update" then
     local rec = msg.data
     if type(rec) ~= "table" or not rec.id then
-      reply(client, msg.reqId, false, { error = "数据格式错误" })
+      reply(client, msg.reqId, false, { error = "Bad data format" })
       return
     end
     if not db.get(data, rec.id) then
-      reply(client, msg.reqId, false, { error = "护照不存在, 请先登记" })
+      reply(client, msg.reqId, false, { error = "Passport not found, register it first" })
       return
     end
     data.passports[rec.id] = rec
     db.save(data)
-    log(("更新护照 %s"):format(rec.id))
+    log(("Updated passport %s"):format(rec.id))
     reply(client, msg.reqId, true, { record = rec })
   elseif t == "check" then
     local rec = db.get(data, msg.id)
     if not rec then
-      reply(client, msg.reqId, false, { error = "未找到护照 " .. tostring(msg.id) })
+      reply(client, msg.reqId, false, { error = "Passport not found: " .. tostring(msg.id) })
       return
     end
     local ok, reason = passport.validate(rec)
@@ -92,20 +92,20 @@ local function handle(client, msg)
     local rec, err = db.revoke(data, msg.id)
     if rec then
       db.save(data)
-      log(("吊销护照 %s"):format(msg.id))
+      log(("Revoked passport %s"):format(msg.id))
       reply(client, msg.reqId, true, { record = rec })
     else
-      reply(client, msg.reqId, false, { error = err or "吊销失败" })
+      reply(client, msg.reqId, false, { error = err or "Revoke failed" })
     end
   elseif t == "remove" then
     local ok = db.remove(data, msg.id)
     if ok then db.save(data) end
-    log(("删除护照 %s : %s"):format(msg.id, ok and "成功" or "未找到"))
+    log(("Deleted passport %s: %s"):format(msg.id, ok and "ok" or "not found"))
     reply(client, msg.reqId, ok, {})
   elseif t == "stats" then
     reply(client, msg.reqId, true, { stats = db.stats(data) })
   else
-    reply(client, msg.reqId, false, { error = "未知请求类型: " .. tostring(t) })
+    reply(client, msg.reqId, false, { error = "Unknown request type: " .. tostring(t) })
   end
 end
 
@@ -115,18 +115,18 @@ local function banner()
   term.setCursorPos(1, 1)
   term.setTextColor(colors.cyan)
   print("============================================")
-  print("    护照管理系统 · 中央服务器 v" .. config.VERSION)
+  print("    Passport System · Central Server v" .. config.VERSION)
   print("============================================")
   term.setTextColor(colors.white)
   print()
-  print("  本机电脑 ID : " .. os.getComputerID())
-  print("  数据库文件  : " .. config.SERVER_DB)
+  print("  Computer ID: " .. os.getComputerID())
+  print("  Database file: " .. config.SERVER_DB)
   local st = db.stats(data)
-  print("  已存护照    : " .. st.total .. " (有效 " .. st.active
-    .. " / 吊销 " .. st.revoked .. " / 过期 " .. st.expired .. ")")
-  print("  下一编号    : " .. st.nextID)
+  print("  Passports: " .. st.total .. " (valid " .. st.active
+    .. " / revoked " .. st.revoked .. " / expired " .. st.expired .. ")")
+  print("  Next ID: " .. st.nextID)
   print()
-  print("  运行中... Ctrl+T 停止, Ctrl+R 重启")
+  print("  Running... Ctrl+T stop, Ctrl+R restart")
   print("--------------------------------------------------")
 end
 
@@ -134,15 +134,15 @@ end
 local modem = peripheral.find("modem")
 if not modem then
   term.setTextColor(colors.red)
-  print("错误: 未连接调制解调器!")
-  print("请在电脑背面(或其他面)放置有线调制解调器。")
+  print("Error: no modem attached!")
+  print("Place a wired modem on the computer (back or any side).")
   term.setTextColor(colors.white)
   return
 end
 local ok, err = pcall(rednet.open, peripheral.getName(modem))
 if not ok then
   term.setTextColor(colors.red)
-  print("错误: 打开调制解调器失败: " .. tostring(err))
+  print("Error: failed to open modem: " .. tostring(err))
   term.setTextColor(colors.white)
   return
 end
@@ -151,8 +151,8 @@ end
 local hostOk, hostErr = pcall(rednet.host, config.DISCOVERY_PROTOCOL, config.DISCOVERY_NAME)
 if not hostOk then
   term.setTextColor(colors.yellow)
-  print("警告: 注册发现服务失败: " .. tostring(hostErr))
-  print("       (可能已有一个服务器在运行?)")
+  print("Warning: failed to register discovery service: " .. tostring(hostErr))
+  print("       (another server may already be running?)")
   term.setTextColor(colors.white)
 end
 
@@ -166,8 +166,8 @@ parallel.waitForAny(
       if type(msg) == "table" then
         local okc, errc = pcall(handle, client, msg)
         if not okc then
-          log(("处理请求出错: %s"):format(errc))
-          reply(client, msg.reqId, false, { error = "服务器内部错误" })
+          log(("Error handling request: %s"):format(errc))
+          reply(client, msg.reqId, false, { error = "Server internal error" })
         end
       end
     end
@@ -181,7 +181,7 @@ parallel.waitForAny(
       term.setBackgroundColor(colors.gray)
       term.setTextColor(colors.black)
       term.setCursorPos(1, h)
-      local line = ("  护照总数 %d  有效 %d  吊销 %d  过期 %d"):format(
+      local line = ("  Passports %d  valid %d  revoked %d  expired %d"):format(
         st.total, st.active, st.revoked, st.expired)
       term.write(line .. string.rep(" ", w - #line))
       term.setBackgroundColor(colors.black)

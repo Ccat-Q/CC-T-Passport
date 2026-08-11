@@ -30,7 +30,7 @@ function db.save(data)
   if not ok then return false, err end
   local tmp = config.SERVER_DB .. ".tmp"
   local f = fs.open(tmp, "w")
-  if not f then return false, "无法写入数据库" end
+  if not f then return false, "Cannot write database" end
   f.write(textutils.serialize(data))
   f.close()
   if fs.exists(config.SERVER_DB) then
@@ -74,7 +74,7 @@ end
 function db.addStamp(data, id, stamp)
   local rec = data.passports[id]
   if not rec then
-    return nil, "护照不存在: " .. tostring(id)
+    return nil, "Passport not found: " .. tostring(id)
   end
   local pmod = require("lib.passport")
   pmod.addStamp(rec, stamp)
@@ -85,7 +85,7 @@ end
 function db.revoke(data, id)
   local rec = data.passports[id]
   if not rec then
-    return nil, "护照不存在: " .. tostring(id)
+    return nil, "Passport not found: " .. tostring(id)
   end
   rec.status = "revoked"
   return rec
