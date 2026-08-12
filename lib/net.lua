@@ -46,7 +46,7 @@ end
 -- 生成请求编号(用于匹配响应)
 function net.nextReqId()
   reqCounter = reqCounter + 1
-  return string.format("%d-%d-%d", os.time(), reqCounter, math.random(1000, 9999))
+  return string.format("%d-%d-%d", os.epoch("utc") / 1000, reqCounter, math.random(1000, 9999))
 end
 
 -- 发送业务请求并等待响应。
@@ -60,8 +60,8 @@ function net.request(serverId, payload, timeout)
   if not rednet.send(serverId, payload, config.PROTOCOL) then
     return nil
   end
-  local deadline = os.time() + timeout
-  while os.time() < deadline do
+  local deadline = os.epoch("utc") / 1000 + timeout
+  while os.epoch("utc") / 1000 < deadline do
     local sender, msg, proto = rednet.receive(config.PROTOCOL, 0.5)
     if sender == serverId and type(msg) == "table"
       and msg.type == "response" and msg.reqId == payload.reqId then

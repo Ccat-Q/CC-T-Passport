@@ -218,7 +218,7 @@ function tui.menu(title, options, width)
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(mx + 1, my + mh - 1)
-    term.write(tui.pad("^v select  Enter confirm  Esc back", mw - 2))
+    term.write(tui.pad("^v select  Enter confirm  Esc/Q back", mw - 2))
   end
 
   draw()
@@ -235,7 +235,7 @@ function tui.menu(title, options, width)
         draw()
       elseif p1 == keys.enter then
         return sel
-      elseif p1 == keys.esc then
+      elseif p1 == keys.esc or p1 == keys.q then
         return nil
       end
     elseif ev == "char" then
@@ -318,7 +318,7 @@ function tui.form(title, fields)
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(fx + 1, fy + fh - 1)
-    term.write(tui.pad(hint ~= "" and hint or "^v switch  Enter edit/submit  Esc cancel", fw - 2))
+    term.write(tui.pad(hint ~= "" and hint or "^v switch  Enter edit/submit  Esc/Q cancel", fw - 2))
   end
 
   local function isChoice(i)
@@ -402,7 +402,7 @@ function tui.form(title, fields)
       elseif p1 == keys.right and isChoice(cur) then
         cycleChoice(cur, 1)
         draw()
-      elseif p1 == keys.esc then
+      elseif p1 == keys.esc or p1 == keys.q then
         return nil
       end
     elseif ev == "char" and isChoice(cur) then

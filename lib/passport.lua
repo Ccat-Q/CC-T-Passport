@@ -9,7 +9,7 @@ local passport = {}
 -- 客户端本地生成一个临时护照编号(服务器登记后可能换成官方编号)
 -- 限制在 13 字符以内, 满足软盘标签长度限制
 function passport.provisionalID()
-  local t = os.time()
+  local t = os.epoch("utc") / 1000
   local sub = (os.clock() * 10000) % 10000
   return string.format("PN-%04d-%04d", t % 10000, math.floor(sub))
 end
@@ -19,7 +19,7 @@ function passport.new(data)
   data = data or {}
   local validYears = tonumber(data.validYears) or config.DEFAULT_VALID_YEARS
   if validYears < 1 then validYears = 1 end
-  local now = os.time()
+  local now = os.epoch("utc") / 1000
   local p = {
     id         = (data.id and data.id ~= "") and data.id or passport.provisionalID(),
     name       = data.name or "Unknown",
@@ -46,7 +46,7 @@ function passport.validate(p)
   if p.status == "revoked" then
     return false, "Passport has been revoked"
   end
-  if p.expires and os.time() > p.expires then
+  if p.expires and os.epoch("utc") / 1000 > p.expires then
     return false, "Passport expired (" .. tostring(p.expiry) .. ")"
   end
   return true, "Valid until " .. tostring(p.expiry or "?") .. ")"
@@ -56,7 +56,7 @@ end
 -- 返回追加后的记录
 function passport.addStamp(p, stamp)
   stamp = stamp or {}
-  stamp.time = os.date("%Y-%m-%d %H:%M:%S", os.time())
+  stamp.time = os.date("%Y-%m-%d %H:%M:%S", os.epoch("utc") / 1000)
   stamp.idx = #p.stamps + 1
   table.insert(p.stamps, stamp)
   return stamp

@@ -245,7 +245,7 @@ local function showPassport(p)
     term.setBackgroundColor(colors.black)
     term.setTextColor(colors.gray)
     term.setCursorPos(1, h - 1)
-    term.write(tui.truncate("< > page  P print  M monitor  Esc back", w))
+    term.write(tui.truncate("< > page  P print  M monitor  Esc/Q back", w))
   end
 
   draw()
@@ -260,7 +260,7 @@ local function showPassport(p)
         page = page + 1
         if page > pages then page = 1 end
         draw()
-      elseif p1 == keys.esc then
+      elseif p1 == keys.esc or p1 == keys.q then
         return
       end
     elseif ev == "char" then
@@ -279,6 +279,8 @@ local function showPassport(p)
           tui.msgBox("Monitor", { "No monitor (" .. config.MONITOR_SIDE .. ")" })
           draw()
         end
+      elseif c == "q" then
+        return
       end
     end
   end
@@ -620,8 +622,8 @@ local lastServerCheck = 0
 while true do
   scanPeriphs()
   -- 离线时每 15 秒尝试重新发现服务器(rednet.lookup 会阻塞约 2 秒)
-  if not serverId and os.time() - lastServerCheck >= 15 then
-    lastServerCheck = os.time()
+  if not serverId and os.epoch("utc") / 1000 - lastServerCheck >= 15 then
+    lastServerCheck = os.epoch("utc") / 1000
     refreshServer()
   end
 

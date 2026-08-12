@@ -82,7 +82,7 @@ local passport = {}
 -- 客户端本地生成一个临时护照编号(服务器登记后可能换成官方编号)
 -- 限制在 13 字符以内, 满足软盘标签长度限制
 function passport.provisionalID()
-  local t = os.time()
+  local t = os.epoch("utc") / 1000
   local sub = (os.clock() * 10000) % 10000
   return string.format("PN-%04d-%04d", t % 10000, math.floor(sub))
 end
@@ -92,7 +92,7 @@ function passport.new(data)
   data = data or {}
   local validYears = tonumber(data.validYears) or config.DEFAULT_VALID_YEARS
   if validYears < 1 then validYears = 1 end
-  local now = os.time()
+  local now = os.epoch("utc") / 1000
   local p = {
     id         = (data.id and data.id ~= "") and data.id or passport.provisionalID(),
     name       = data.name or "Unknown",
@@ -119,7 +119,7 @@ function passport.validate(p)
   if p.status == "revoked" then
     return false, "Passport has been revoked"
   end
-  if p.expires and os.time() > p.expires then
+  if p.expires and os.epoch("utc") / 1000 > p.expires then
     return false, "Passport expired (" .. tostring(p.expiry) .. ")"
   end
   return true, "Valid until " .. tostring(p.expiry or "?") .. ")"
@@ -129,7 +129,7 @@ end
 -- 返回追加后的记录
 function passport.addStamp(p, stamp)
   stamp = stamp or {}
-  stamp.time = os.date("%Y-%m-%d %H:%M:%S", os.time())
+  stamp.time = os.date("%Y-%m-%d %H:%M:%S", os.epoch("utc") / 1000)
   stamp.idx = #p.stamps + 1
   table.insert(p.stamps, stamp)
   return stamp
@@ -252,7 +252,7 @@ end
 -- 生成请求编号(用于匹配响应)
 function net.nextReqId()
   reqCounter = reqCounter + 1
-  return string.format("%d-%d-%d", os.time(), reqCounter, math.random(1000, 9999))
+  return string.format("%d-%d-%d", os.epoch("utc") / 1000, reqCounter, math.random(1000, 9999))
 end
 
 -- 发送业务请求并等待响应。
@@ -266,8 +266,8 @@ function net.request(serverId, payload, timeout)
   if not rednet.send(serverId, payload, config.PROTOCOL) then
     return nil
   end
-  local deadline = os.time() + timeout
-  while os.time() < deadline do
+  local deadline = os.epoch("utc") / 1000 + timeout
+  while os.epoch("utc") / 1000 < deadline do
     local sender, msg, proto = rednet.receive(config.PROTOCOL, 0.5)
     if sender == serverId and type(msg) == "table"
       and msg.type == "response" and msg.reqId == payload.reqId then
@@ -505,7 +505,7 @@ function tui.menu(title, options, width)
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(mx + 1, my + mh - 1)
-    term.write(tui.pad("^v select  Enter confirm  Esc back", mw - 2))
+    term.write(tui.pad("^v select  Enter confirm  Esc/Q back", mw - 2))
   end
 
   draw()
@@ -522,7 +522,7 @@ function tui.menu(title, options, width)
         draw()
       elseif p1 == keys.enter then
         return sel
-      elseif p1 == keys.esc then
+      elseif p1 == keys.esc or p1 == keys.q then
         return nil
       end
     elseif ev == "char" then
@@ -605,7 +605,7 @@ function tui.form(title, fields)
     term.setBackgroundColor(C.bg)
     term.setTextColor(C.dimFg)
     term.setCursorPos(fx + 1, fy + fh - 1)
-    term.write(tui.pad(hint ~= "" and hint or "^v switch  Enter edit/submit  Esc cancel", fw - 2))
+    term.write(tui.pad(hint ~= "" and hint or "^v switch  Enter edit/submit  Esc/Q cancel", fw - 2))
   end
 
   local function isChoice(i)
@@ -689,7 +689,7 @@ function tui.form(title, fields)
       elseif p1 == keys.right and isChoice(cur) then
         cycleChoice(cur, 1)
         draw()
-      elseif p1 == keys.esc then
+      elseif p1 == keys.esc or p1 == keys.q then
         return nil
       end
     elseif ev == "char" and isChoice(cur) then
@@ -823,7 +823,7 @@ end
 function db.register(data, rec)
   local id = rec.id or ""
   if id == "" then
-    id = string.format("PN-%s-%04d", os.date("%Y", os.time()), data.seq)
+    id = string.format("PN-%s-%04d", os.date("%Y", os.epoch("utc") / 1000), data.seq)
     data.seq = data.seq + 1
     rec.id = id
     return rec, true
@@ -872,7 +872,7 @@ end
 -- 统计
 function db.stats(data)
   local total, active, revoked, expired = 0, 0, 0, 0
-  local now = os.time()
+  local now = os.epoch("utc") / 1000
   for _, p in pairs(data.passports) do
     total = total + 1
     if p.status == "revoked" then
@@ -888,7 +888,7 @@ function db.stats(data)
     active = active,
     revoked = revoked,
     expired = expired,
-    nextID = string.format("PN-%s-%04d", os.date("%Y", os.time()), data.seq),
+    nextID = string.format("PN-%s-%04d", os.date("%Y", os.epoch("utc") / 1000), data.seq),
   }
 end
 
@@ -926,7 +926,7 @@ local function handle(client, msg)
     reply(client, msg.reqId, true, {
       pong = true,
       version = config.VERSION,
-      time = os.time(),
+      time = os.epoch("utc") / 1000,
       serverID = os.getComputerID(),
     })
   elseif t == "register" then
@@ -1332,7 +1332,7 @@ local function showPassport(p)
     term.setBackgroundColor(colors.black)
     term.setTextColor(colors.gray)
     term.setCursorPos(1, h - 1)
-    term.write(tui.truncate("< > page  P print  M monitor  Esc back", w))
+    term.write(tui.truncate("< > page  P print  M monitor  Esc/Q back", w))
   end
 
   draw()
@@ -1347,7 +1347,7 @@ local function showPassport(p)
         page = page + 1
         if page > pages then page = 1 end
         draw()
-      elseif p1 == keys.esc then
+      elseif p1 == keys.esc or p1 == keys.q then
         return
       end
     elseif ev == "char" then
@@ -1366,6 +1366,8 @@ local function showPassport(p)
           tui.msgBox("Monitor", { "No monitor (" .. config.MONITOR_SIDE .. ")" })
           draw()
         end
+      elseif c == "q" then
+        return
       end
     end
   end
@@ -1707,8 +1709,8 @@ local lastServerCheck = 0
 while true do
   scanPeriphs()
   -- 离线时每 15 秒尝试重新发现服务器(rednet.lookup 会阻塞约 2 秒)
-  if not serverId and os.time() - lastServerCheck >= 15 then
-    lastServerCheck = os.time()
+  if not serverId and os.epoch("utc") / 1000 - lastServerCheck >= 15 then
+    lastServerCheck = os.epoch("utc") / 1000
     refreshServer()
   end
 

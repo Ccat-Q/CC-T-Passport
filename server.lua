@@ -30,7 +30,7 @@ local function handle(client, msg)
     reply(client, msg.reqId, true, {
       pong = true,
       version = config.VERSION,
-      time = os.time(),
+      time = os.epoch("utc") / 1000,
       serverID = os.getComputerID(),
     })
   elseif t == "register" then

@@ -45,7 +45,7 @@ end
 function db.register(data, rec)
   local id = rec.id or ""
   if id == "" then
-    id = string.format("PN-%s-%04d", os.date("%Y", os.time()), data.seq)
+    id = string.format("PN-%s-%04d", os.date("%Y", os.epoch("utc") / 1000), data.seq)
     data.seq = data.seq + 1
     rec.id = id
     return rec, true
@@ -94,7 +94,7 @@ end
 -- 统计
 function db.stats(data)
   local total, active, revoked, expired = 0, 0, 0, 0
-  local now = os.time()
+  local now = os.epoch("utc") / 1000
   for _, p in pairs(data.passports) do
     total = total + 1
     if p.status == "revoked" then
@@ -110,7 +110,7 @@ function db.stats(data)
     active = active,
     revoked = revoked,
     expired = expired,
-    nextID = string.format("PN-%s-%04d", os.date("%Y", os.time()), data.seq),
+    nextID = string.format("PN-%s-%04d", os.date("%Y", os.epoch("utc") / 1000), data.seq),
   }
 end
 
